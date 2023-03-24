@@ -7,6 +7,8 @@ rows = "ABCD"
 
 cols = "1234"
 
+-- Task 1
+
 -- Eq is a class that defines equality, making sure that the type is comparable
 -- a is the type of the element
 
@@ -28,6 +30,8 @@ convertZero a
 convert :: [Char] -> [Char]
 convert [] = []
 convert (x : xs) = convertZero x : convert xs
+
+-- Task 2
 
 -- board :: [Int] -> [(String, Int)]
 -- board i = cross rows [1 .. i]
