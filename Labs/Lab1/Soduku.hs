@@ -2,6 +2,7 @@ module Sudoku where
 
 import Data.Char (digitToInt)
 import Distribution.Simple.Utils (xargs)
+import GHC.Float (int2Float)
 
 rows = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -37,4 +38,12 @@ convert (x : xs) = convertZero x : convert xs
 -- Only 4x4 and 9x9 since I don't know how to solve the cols list with more than values up to 9
 
 board :: Int -> [String]
-board n = cross (take n rows) (take n cols)
+board n =
+  let p = sqrt (int2Float n)
+   in cross (take (round p) rows) (take (round p) cols)
+
+-- Task 3
+
+-- parseBoard :: [Char] -> [String]
+
+-- parseBoard a = cross (board (length a)) (convert a)
