@@ -1,5 +1,7 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
+-- Antonio Krsoski & Willard Rådborg
+
 module Chatterbot where
 
 import Data.Char
@@ -117,13 +119,11 @@ match _ _ [] = Nothing
 match _ [] _ = Nothing
 match wc (x : ps) (s : sl)
   | x == s = match wc ps sl
-  -- maybe remove this line probalby
   | wc /= x = Nothing
   | otherwise = longerWildcardMatch (x : ps) (s : sl) `orElse` singleWildcardMatch (x : ps) (s : sl)
 
 -- Helper function to match
 singleWildcardMatch, longerWildcardMatch :: Eq a => [a] -> [a] -> Maybe [a]
--- mayvbe change const to id function
 singleWildcardMatch (wc : ps) (x : xs) = mmap (const [x]) (match wc ps xs)
 longerWildcardMatch (wc : ps) (x : xs) = mmap (x :) (match wc (wc : ps) xs)
 
