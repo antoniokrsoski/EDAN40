@@ -122,7 +122,7 @@ match wc (x : ps) (s : sl)
   | wc /= x = Nothing
   | otherwise = longerWildcardMatch (x : ps) (s : sl) `orElse` singleWildcardMatch (x : ps) (s : sl)
 
--- Helper function to match
+-- Helper function
 singleWildcardMatch, longerWildcardMatch :: Eq a => [a] -> [a] -> Maybe [a]
 singleWildcardMatch (wc : ps) (x : xs) = mmap (const [x]) (match wc ps xs)
 longerWildcardMatch (wc : ps) (x : xs) = mmap (x :) (match wc (wc : ps) xs)
