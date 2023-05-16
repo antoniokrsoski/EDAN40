@@ -1,5 +1,13 @@
 -- Antonio Krsoski & Willard Rådborg
 
+-- Which parts of your code / functions were the hardest to write and why?
+-- The Optimization part was the hardest to write because it was hard to understand the table logic at first
+-- but when writing simple examples down it became easier to understand.
+
+-- Which parts of your code / functions are you the most proud of
+-- The last part of the assignment since we could clearly see the improvment of the program when running
+-- the examples
+
 type AlignmentType = (String, String)
 
 similarityScore :: [Char] -> [Char] -> Int
