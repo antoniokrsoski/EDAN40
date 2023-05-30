@@ -10,16 +10,6 @@
 
 type AlignmentType = (String, String)
 
-similarityScore :: [Char] -> [Char] -> Int
-similarityScore xs [] = scoreSpace * length xs
-similarityScore [] ys = scoreSpace * length ys
-similarityScore (x : xs) (y : ys) =
-  maximum
-    [ score (x, y) + (similarityScore xs ys),
-      (score (x, '-') + similarityScore xs (y : ys)),
-      (score ('-', y) + similarityScore (x : xs) ys)
-    ]
-
 scoreMatch = 0
 
 scoreMismatch = -1
@@ -30,11 +20,22 @@ string1 = "writers"
 
 string2 = "vintner"
 
+score :: (Char, Char) -> Int
 score (x, '-') = scoreSpace
 score ('-', y) = scoreSpace
 score (x, y)
   | x == y = scoreMatch
-  | x /= y = scoreMismatch
+  | otherwise = scoreMismatch
+
+similarityScore :: String -> String -> Int
+similarityScore xl [] = scoreSpace * length xl
+similarityScore [] yl = scoreSpace * length yl
+similarityScore xl@(x : xs) yl@(y : ys) =
+  maximum
+    [ similarityScore xs ys + score (x, y),
+      similarityScore xs yl + score (x, '-'),
+      similarityScore xl ys + score ('-', y)
+    ]
 
 attachHeads :: a -> a -> [([a], [a])] -> [([a], [a])]
 attachHeads h1 h2 aList = [(h1 : xs, h2 : ys) | (xs, ys) <- aList]
@@ -43,9 +44,8 @@ attachHeads h1 h2 aList = [(h1 : xs, h2 : ys) | (xs, ys) <- aList]
 -- aList is a list of list tuples.
 
 maximaBy :: Ord b => (a -> b) -> [a] -> [a]
-maximaBy valueFcn xs = filter (\x -> valueFcn x == maxValue) xs
-  where
-    maxValue = maximum (map valueFcn xs)
+maximaBy _ [] = []
+maximaBy valueFcn xs = [value | value <- xs, valueFcn value == maximum (map valueFcn xs)]
 
 -- Case 1: Empty list of list tuples
 -- Case 2: At least one element in list1 and empty list2 ->
@@ -61,67 +61,72 @@ optAlignments :: String -> String -> [AlignmentType]
 optAlignments [] [] = [([], [])]
 optAlignments (x : xs) [] = attachHeads x '-' (optAlignments xs [])
 optAlignments [] (y : ys) = attachHeads '-' y (optAlignments [] ys)
-optAlignments (x : xs) (y : ys) = maximaBy sim alignments
+optAlignments (x : xs) (y : ys) =
+  maximaBy scores $
+    concat
+      [ attachHeads x y (optAlignments xs ys),
+        attachHeads x '-' (optAlignments xs (y : ys)),
+        attachHeads '-' y (optAlignments (x : xs) ys)
+      ]
   where
-    sim (a, b) = similarityScore a b
-    alignments =
-      concat
-        [ attachHeads x y (optAlignments xs ys),
-          attachHeads x '-' (optAlignments xs (y : ys)),
-          attachHeads '-' y (optAlignments (x : xs) ys)
-        ]
+    scores (xs, ys) = sum $ zipWith (curry score) xs ys
 
 outputOptAlignments :: String -> String -> IO ()
 outputOptAlignments string1 string2 = do
-    putStrLn("There are " ++ show (length (optAlignmentsOptimization string1 string2)) ++ " optimal alignments: \n") 
-    putStrLn("These are the optimal alignments " ++ show (optAlignmentsOptimization string1 string2))
+  putStrLn ("There are " ++ show (length (optAlignmentsOptimization string1 string2)) ++ " optimal alignments: \n")
+  putStrLn ("These are the optimal alignments " ++ show (optAlignmentsOptimization string1 string2))
 
 similarityScoreOptimization :: String -> String -> Int
 similarityScoreOptimization xs ys = simScore (length xs) (length ys)
-    where
-        simScore :: Int -> Int -> Int
-        simScore i j = grid !! i !! j
+  where
+    simScore :: Int -> Int -> Int
+    simScore i j = grid !! i !! j
 
-        grid :: [[Int]]
-        grid = [[entry i j | j <- [0..]] | i <- [0..]]
+    grid :: [[Int]]
+    grid = [[entry i j | j <- [0 ..]] | i <- [0 ..]]
 
-        entry :: Int -> Int -> Int
-        entry 0 0 = 0
-        entry i 0 = i * scoreSpace
-        entry 0 j = j * scoreSpace
-        entry i j = maximum [simScore (i - 1) (j - 1) + score (x, y),
-                             simScore (i - 1)  j      + score (x, '-'),
-                             simScore  i      (j - 1) + score ('-', y)]
-            where
-                x = xs !! (i - 1)
-                y = ys !! (j - 1)
+    entry :: Int -> Int -> Int
+    entry 0 0 = 0
+    entry i 0 = i * scoreSpace
+    entry 0 j = j * scoreSpace
+    entry i j =
+      maximum
+        [ simScore (i - 1) (j - 1) + score (x, y),
+          simScore (i - 1) j + score (x, '-'),
+          simScore i (j - 1) + score ('-', y)
+        ]
+      where
+        x = xs !! (i - 1)
+        y = ys !! (j - 1)
 
 optAlignmentsOptimization :: String -> String -> [AlignmentType]
-optAlignmentsOptimization xs ys = map
-                          (pairApply reverse)
-                          (snd $ alignment (length xs) (length ys))
-    where
-        pairApply f (a, b) = (f a, f b)
+optAlignmentsOptimization xs ys =
+  map
+    (pairApply reverse)
+    (snd $ alignment (length xs) (length ys))
+  where
+    pairApply f (a, b) = (f a, f b)
 
-        alignment :: Int -> Int -> (Int, [AlignmentType])
-        alignment i j = grid !! i !! j
+    alignment :: Int -> Int -> (Int, [AlignmentType])
+    alignment i j = grid !! i !! j
 
-        grid :: [[(Int, [AlignmentType])]]
-        grid = [[entry i j | j <- [0..]] | i <- [0..]]
+    grid :: [[(Int, [AlignmentType])]]
+    grid = [[entry i j | j <- [0 ..]] | i <- [0 ..]]
 
-        entry :: Int -> Int -> (Int, [AlignmentType])
-        entry 0 0 = (0, [([], [])])
-        entry i 0 = (i * scoreSpace, [(take i xs, replicate i '-')])
-        entry 0 j = (j * scoreSpace, [(replicate j '-', take j ys)])
-        entry i j = (fst $ head opt, concat [snd b | b <- opt])
-            where 
-                (s1, a1) = alignment (i - 1) (j - 1)
-                (s2, a2) = alignment (i - 1)  j
-                (s3, a3) = alignment  i      (j - 1)
-                x = xs !! (i - 1)
-                y = ys !! (j - 1)
-                opt = maximaBy fst $ [
-                    (s1 + score (x,y),   attachHeads x y   a1),
-                    (s2 + score (x, '-'), attachHeads x '-' a2),
-                    (s3 + score ('-', y), attachHeads '-' y a3)]
-
+    entry :: Int -> Int -> (Int, [AlignmentType])
+    entry 0 0 = (0, [([], [])])
+    entry i 0 = (i * scoreSpace, [(take i xs, replicate i '-')])
+    entry 0 j = (j * scoreSpace, [(replicate j '-', take j ys)])
+    entry i j = (fst $ head opt, concat [snd b | b <- opt])
+      where
+        (s1, a1) = alignment (i - 1) (j - 1)
+        (s2, a2) = alignment (i - 1) j
+        (s3, a3) = alignment i (j - 1)
+        x = xs !! (i - 1)
+        y = ys !! (j - 1)
+        opt =
+          maximaBy fst $
+            [ (s1 + score (x, y), attachHeads x y a1),
+              (s2 + score (x, '-'), attachHeads x '-' a2),
+              (s3 + score ('-', y), attachHeads '-' y a3)
+            ]
